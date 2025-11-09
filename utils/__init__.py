@@ -44,6 +44,8 @@ def gen_episode_name_list(video_info):
     name_list.append("第"+str(episode_count)+"話")
     name_list.append("エピソード"+str(episode_count))
     name_list.append("episode"+str(episode_count))
+    name_list.append("EPISODE "+str(episode_count))
+    name_list.append("EPISODE "+str(episode_count).zfill(2))
     name_list.append("ep"+str(episode_count))
     name_list.append("#"+str(episode_count))
     name_list.append("#"+str(episode_count).zfill(2))
