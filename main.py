@@ -13,23 +13,11 @@ api_tool = Niconico_Search(web_session)
 
 api_tool.setup_sesson(web_session)
 
-search_info = {
-    "series_title": "最後にひとつだけお願いしてもよろしいでしょうか",
-    "episode_title": "悪徳貴族（豚野郎達）を思う存分ボコボコにしてスカッとしてもよろしいでしょうか",
-    "episode_name": "EPISODE 1",
-    "episode_name_count": 1,
-    "filter_json": {
-        "duration": 1420,
-        "targets": {
-            "official": True,
-            "danime": True,
-            "chapter": True,
-            "szbh": False
-        }
-    }
-}
+with open('search_info.json', encoding="utf-8") as f:
+    search_info = json.load(f)
 
 try:
+    print("Fetching Comment from '26-253_s1_p1'")
     total_tv, total_comment, total_comment_json = api_tool.export_comment(search_info)
     
     print(f" + Hit Channel: {', '.join(total_tv)}")
@@ -37,5 +25,6 @@ try:
     
     tree = api_tool.generate_xml(total_comment_json)
     saved_filename = api_tool.save_xml_to_file(tree)
+    print(f" + Exported locate: {saved_filename}")
 except:
     console.print_exception(show_locals=True)

@@ -1,0 +1,15 @@
+{
+    "series_title": "最後にひとつだけお願いしてもよろしいでしょうか",
+    "episode_title": "悪徳貴族（豚野郎達）を思う存分ボコボコにしてスカッとしてもよろしいでしょうか",
+    "episode_name": "EPISODE 1",
+    "episode_name_count": 1,
+    "filter_json": {
+        "duration": 1420,
+        "targets": {
+            "official": true,
+            "danime": true,
+            "chapter": true,
+            "szbh": false
+        }
+    }
+}
