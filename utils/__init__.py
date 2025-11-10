@@ -1,5 +1,9 @@
+import os
+import copy
 import json
 import urllib.parse
+import xml.etree.ElementTree as ET
+from datetime import datetime
 
 class Niconico_Search:
     def __init__(self, session):
@@ -185,3 +189,83 @@ class Niconico_Search:
             return response["data"]
         else:
             return response["data"]
+    def get_channel_info(self, channelid):
+        response = self.session.get(f"https://www.nicovideo.jp/watch/{channelid}?responseType=json").json()
+        filtered_data = [
+            {"id": str(item["id"]), "fork": item["forkLabel"]}
+            for item in response["data"]["response"]["comment"]["threads"] if item["label"] != "easy"
+        ]
+        thread_key = response["data"]["response"]["comment"]["nvComment"]["threadKey"]
+
+        return filtered_data, thread_key
+    def get_content_channel(self, channel_info):
+        filtered_data = channel_info["filter_data"]
+        thread_key    = channel_info["thread_key"]
+        payload = {
+            "params": {
+                "targets": filtered_data,
+                "language": "ja-jp"
+            },
+            "threadKey": thread_key,
+            "additionals": {}
+        }
+        headers = {
+            "X-Frontend-Id": "6",
+            "X-Frontend-Version": "0",
+            "X-Client-Os-Type": "others",
+            "Content-Type": "application/json"
+        }
+        response = self.session.post("https://public.nvcomment.nicovideo.jp/v1/threads", json=payload, headers=headers).json()
+        return response
+    
+    def process_filter(self, channel_info):
+        process_target = copy.deepcopy(channel_info)
+        id_occurrences = {}
+        for entry in process_target:
+            for item in entry['filter_data']:
+                id_occurrences.setdefault(item['id'], 0)
+                id_occurrences[item['id']] += 1
+        
+        duplicate_ids = {id_ for id_, count in id_occurrences.items() if count > 1}
+        
+        for dup_id in duplicate_ids:
+            process_target[0]['filter_data'] = [
+                item for item in process_target[0]['filter_data'] if item['id'] != dup_id
+            ]
+        return process_target
+        
+    
+    def generate_xml(self, json_data):
+        root = ET.Element("packet", version="20061206")
+        
+        for item in json_data:
+            chat = ET.SubElement(root, "chat")
+            chat.set("no", str(item["no"]))
+            chat.set("vpos", str(item["vposMs"] // 10))
+            timestamp = datetime.fromisoformat(item["postedAt"]).timestamp()
+            chat.set("date", str(int(timestamp)))
+            chat.set("date_usec", "0")
+            chat.set("user_id", item["userId"])
+            
+            chat.set("mail", " ".join(item["commands"]))
+            
+            chat.set("premium", "1" if item["isPremium"] else "0")
+            chat.set("anonymity", "0")
+            chat.text = item["body"]
+        
+        return ET.ElementTree(root)
+    def save_xml_to_file(self, tree, base_filename="output.xml"):
+        directory = os.path.dirname(base_filename)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory)
+        
+        filename = base_filename
+        counter = 1
+        while os.path.exists(filename):
+            filename = f"{os.path.splitext(base_filename)[0]}_{counter}.xml"
+            counter += 1
+    
+        ET.indent(tree, space="  ", level=0)
+        
+        tree.write(filename, encoding="utf-8", xml_declaration=True)
+        return filename
