@@ -15,8 +15,6 @@
 - [About Repository](#What-this)
 - [Requirement](#requirement)
 - [How to use](#how-to-use)
-    - [Free Content Decrypt](#how-to-use-code)
-    - [Premium Content Decrypt](#how-to-decrypt-premium)
 
 ## What this
 
