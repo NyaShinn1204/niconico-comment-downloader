@@ -17,7 +17,7 @@ with open('search_info.json', encoding="utf-8") as f:
     search_info = json.load(f)
 
 try:
-    print("Fetching Comment from '26-253_s1_p1'")
+    print("Fetching Comment from json file")
     total_tv, total_comment, total_comment_json = api_tool.export_comment(search_info)
     
     print(f" + Hit Channel: {', '.join(total_tv)}")
