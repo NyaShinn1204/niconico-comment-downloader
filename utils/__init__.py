@@ -269,3 +269,34 @@ class Niconico_Search:
         
         tree.write(filename, encoding="utf-8", xml_declaration=True)
         return filename
+    
+    def export_comment(self, search_info):
+        total_comment = 0
+        total_comment_json = []
+        total_tv = []
+
+        total_filter = []
+
+        channle_list = self.get_channel_list(search_info)
+        for single_channel in channle_list:
+    
+            filter_data, thread_key = self.get_channel_info(single_channel["contentId"])
+            single_json = {
+                "filter_data": filter_data,
+                "thread_key": thread_key
+            }
+            total_filter.append(single_json)
+        processed_list = self.process_filter(total_filter)
+        for i, single_channel in enumerate(channle_list):
+            channle_response = self.get_content_channel(processed_list[i])
+            for i in channle_response["data"]["globalComments"]:
+                total_comment = total_comment + i["count"]
+            for i in channle_response["data"]["threads"]:
+                for i in i["comments"]:
+                    total_comment_json.append(i)
+            if single_channel["tags"].__contains__("dアニメストア"):
+                total_tv.append("dアニメ")
+            else:
+                total_tv.append("公式")
+
+        return total_tv, total_comment, total_comment_json
