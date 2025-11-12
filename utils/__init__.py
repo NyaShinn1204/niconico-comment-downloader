@@ -315,47 +315,51 @@ class Niconico_Search:
             channle_response = self.get_content_channel(processed_list[single_channel_count])
             for i in channle_response["data"]["globalComments"]:
                 total_comment = total_comment + i["count"]
-            for single_thread in channle_response["data"]["threads"]:
-                print("Checking Comment Count")
-                print(" + Channel Comment Count: ", str(single_thread["commentCount"]))
-
-                if single_thread["commentCount"] == len(single_thread["comments"]):
-                    total_comment_json.extend(single_thread["comments"])
-                    continue
-
-                temp_list = list(single_thread["comments"])
-                temp_count = len(temp_list)
-
-                dt = datetime.fromisoformat(single_thread["comments"][0]["postedAt"])
-                first_unixtime = int(dt.timestamp())
-
-
-                while temp_count < single_thread["commentCount"]:
-                    search_target = {
-                        "thread_key": processed_list[single_channel_count]["thread_key"],
-                        "filter_data": [
-                            {
-                                "id": single_thread["id"],
-                                "fork": single_thread["fork"],
-                            }
-                        ]
-                    }
-
-                    channel_response = self.get_content_channel(search_target, first_unixtime)
-                    comments = channel_response["data"]["threads"][0]["comments"]
-
-                    if not comments:
-                        break
-
-                    temp_list.extend(comments)
+            if self.logined_ac:
+                for single_thread in channle_response["data"]["threads"]:
+                    print("Checking Comment Count")
+                    print(" + Channel Comment Count: ", str(single_thread["commentCount"]))
+    
+                    if single_thread["commentCount"] == len(single_thread["comments"]):
+                        total_comment_json.extend(single_thread["comments"])
+                        continue
+    
+                    temp_list = list(single_thread["comments"])
                     temp_count = len(temp_list)
-
-                    dt = datetime.fromisoformat(comments[0]["postedAt"])
+    
+                    dt = datetime.fromisoformat(single_thread["comments"][0]["postedAt"])
                     first_unixtime = int(dt.timestamp())
-                
-                print(" + Last Check List count: ", str(len(temp_list)))
-                total_comment_json.extend(temp_list)
-
+    
+    
+                    while temp_count < single_thread["commentCount"]:
+                        search_target = {
+                            "thread_key": processed_list[single_channel_count]["thread_key"],
+                            "filter_data": [
+                                {
+                                    "id": single_thread["id"],
+                                    "fork": single_thread["fork"],
+                                }
+                            ]
+                        }
+    
+                        channel_response = self.get_content_channel(search_target, first_unixtime)
+                        comments = channel_response["data"]["threads"][0]["comments"]
+    
+                        if not comments:
+                            break
+    
+                        temp_list.extend(comments)
+                        temp_count = len(temp_list)
+    
+                        dt = datetime.fromisoformat(comments[0]["postedAt"])
+                        first_unixtime = int(dt.timestamp())
+                    
+                    print(" + Last Check List count: ", str(len(temp_list)))
+                    total_comment_json.extend(temp_list)
+            else:
+                for i in channle_response["data"]["threads"]:
+                    for i in i["comments"]:
+                        total_comment_json.append(i)
                                 
             if single_channel["tags"].__contains__("dアニメストア"):
                 total_tv.append("dアニメ")
