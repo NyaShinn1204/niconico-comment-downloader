@@ -26,11 +26,12 @@ class Niconico_Search:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
         })
     def setup_cookie(self, cookie_text):
-        self.logined_ac = True
-
-        self.session.headers.update({
-            "cookie": cookie_text
-        })
+        if cookie_text != "":
+            self.logined_ac = True
+    
+            self.session.headers.update({
+                "cookie": cookie_text
+            })
 
     def convert_kanji(self, num: int):
         kanji_units = ['', '十', '百', '千']
