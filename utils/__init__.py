@@ -1,5 +1,6 @@
 import os
 import copy
+import time
 import json
 import urllib.parse
 import xml.etree.ElementTree as ET
@@ -8,8 +9,9 @@ from datetime import datetime
 class Niconico_Search:
     def __init__(self, session):
         self.session = session
+        self.logined_ac = False
     def setup_sesson(self, session):
-        session.headers.update({
+        self.session.headers.update({
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br, zstd",
             "cache-control": "no-cache",
@@ -22,6 +24,12 @@ class Niconico_Search:
             "sec-fetch-storage-access": "active",
             "sec-gpc": "1",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+        })
+    def setup_cookie(self, cookie_text):
+        self.logined_ac = True
+
+        self.session.headers.update({
+            "cookie": cookie_text
         })
 
     def convert_kanji(self, num: int):
@@ -198,7 +206,7 @@ class Niconico_Search:
         thread_key = response["data"]["response"]["comment"]["nvComment"]["threadKey"]
 
         return filtered_data, thread_key
-    def get_content_channel(self, channel_info):
+    def get_content_channel(self, channel_info, date_time=int(time.time())):
         filtered_data = channel_info["filter_data"]
         thread_key    = channel_info["thread_key"]
         payload = {
@@ -207,8 +215,12 @@ class Niconico_Search:
                 "language": "ja-jp"
             },
             "threadKey": thread_key,
-            "additionals": {}
         }
+        if self.logined_ac:
+            payload["additionals"] = {
+                "when": date_time,
+                "res_from": -1000
+            }
         headers = {
             "X-Frontend-Id": "6",
             "X-Frontend-Version": "0",
@@ -236,9 +248,21 @@ class Niconico_Search:
         
     
     def generate_xml(self, json_data):
+        print("Checking Duplicate comment")
+        seen = set()
+        unique_data = []
+        for item in json_data:
+            key = (item["userId"], item["postedAt"], item["body"])
+            if key not in seen:
+                seen.add(key)
+                unique_data.append(item)
+
+        removed_count = len(json_data) - len(unique_data)
+        print(f" + Delete {removed_count} comment")
+
         root = ET.Element("packet", version="20061206")
         
-        for item in json_data:
+        for item in unique_data:
             chat = ET.SubElement(root, "chat")
             chat.set("no", str(item["no"]))
             chat.set("vpos", str(item["vposMs"] // 10))
@@ -287,13 +311,52 @@ class Niconico_Search:
             }
             total_filter.append(single_json)
         processed_list = self.process_filter(total_filter)
-        for i, single_channel in enumerate(channle_list):
-            channle_response = self.get_content_channel(processed_list[i])
+        for single_channel_count, single_channel in enumerate(channle_list):
+            channle_response = self.get_content_channel(processed_list[single_channel_count])
             for i in channle_response["data"]["globalComments"]:
                 total_comment = total_comment + i["count"]
-            for i in channle_response["data"]["threads"]:
-                for i in i["comments"]:
-                    total_comment_json.append(i)
+            for single_thread in channle_response["data"]["threads"]:
+                print("Checking Comment Count")
+                print(" + Channel Comment Count: ", str(single_thread["commentCount"]))
+
+                if single_thread["commentCount"] == len(single_thread["comments"]):
+                    total_comment_json.extend(single_thread["comments"])
+                    continue
+
+                temp_list = list(single_thread["comments"])
+                temp_count = len(temp_list)
+
+                dt = datetime.fromisoformat(single_thread["comments"][0]["postedAt"])
+                first_unixtime = int(dt.timestamp())
+
+
+                while temp_count < single_thread["commentCount"]:
+                    search_target = {
+                        "thread_key": processed_list[single_channel_count]["thread_key"],
+                        "filter_data": [
+                            {
+                                "id": single_thread["id"],
+                                "fork": single_thread["fork"],
+                            }
+                        ]
+                    }
+
+                    channel_response = self.get_content_channel(search_target, first_unixtime)
+                    comments = channel_response["data"]["threads"][0]["comments"]
+
+                    if not comments:
+                        break
+
+                    temp_list.extend(comments)
+                    temp_count = len(temp_list)
+
+                    dt = datetime.fromisoformat(comments[0]["postedAt"])
+                    first_unixtime = int(dt.timestamp())
+                
+                print(" + Last Check List count: ", str(len(temp_list)))
+                total_comment_json.extend(temp_list)
+
+                                
             if single_channel["tags"].__contains__("dアニメストア"):
                 total_tv.append("dアニメ")
             else:
