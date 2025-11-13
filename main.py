@@ -14,7 +14,7 @@ console = Console()
 web_session = requests.Session()
 api_tool = Niconico_Search(web_session)
 
-api_tool.setup_sesson(web_session)
+api_tool.setup_sesson()
 # dev logic
 api_tool.setup_cookie("")
 
@@ -29,6 +29,7 @@ try:
     print("COMMENT INFO: ")
     
     print(f" + Hit Channel: {', '.join(total_tv)}")
+    print(f" + Delete Comment or Hidden Commnet list: {str(total_comment - len(total_comment_json))}")
     print(f" + Total Comment from Niconico: {str(total_comment)}")
     print(f" + Total Comment from local   : {str(len(total_comment_json))}")
     

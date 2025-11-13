@@ -10,7 +10,7 @@ class Niconico_Search:
     def __init__(self, session):
         self.session = session
         self.logined_ac = False
-    def setup_sesson(self, session):
+    def setup_sesson(self):
         self.session.headers.update({
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br, zstd",
